@@ -11,7 +11,7 @@ using namespace arma;
 //-----------------------------------------------------------------------------------------------------
 
 
-vec par;
+vec par,k;
 mat z, k1,k2,k3,k4,zxx,aux; 
 
 int ret,estro,cont,visual,px3,py3;
@@ -80,6 +80,14 @@ int main(int argc, char **argv)
   if(argc==1){z.zeros();  z.fill(-0.9540); }
  
 
+  k.set_size(par(0));
+  
+  k.subvec(0,par(0)/2-1)=regspace(0,par(0)/2-1);
+  k.subvec(par(0)/2,k.n_rows-1)=regspace(-par(0)/2,-1);
+  k=2*datum::pi*k/par(0)/par(1);
+  //  k.save("k.dat",raw_ascii);
+	   
+  
   
   cout << visual << endl;
   
@@ -124,7 +132,15 @@ mat rhs(vec par, mat z)
   if(par(7)==1){aux.row(0)=aux.row(aux.n_rows-2);aux.row(aux.n_rows-1)=aux.row(1);}//periodic
   //diffusion
   zxx=(aux.rows(2,aux.n_rows-1)+aux.rows(0,aux.n_rows-3)-2*aux.rows(1,aux.n_rows-2))/par(1)/par(1);
-  zxx.col(0)=par(5)*zxx.col(0);  zxx.col(1)=par(6)*zxx.col(1);  zxx.col(2)=par(16)*zxx.col(2);
+  
+
+  
+  //  zxx.col(0)=par(5)*zxx.col(0);  zxx.col(1)=par(6)*zxx.col(1);  zxx.col(2)=par(16)*zxx.col(2);
+  if(par(7)==2){
+  zxx.col(0)=par(5)*real(ifft(-k%k%fft(z.col(0))));
+  zxx.col(1)=par(6)*real(ifft(-k%k%fft(z.col(1))));
+  zxx.col(2)=par(16)*real(ifft(-k%k%fft(z.col(2))));
+  }
   //reaction
   double kk1,kk3,kk4,tau; kk1=par(9); kk3=par(4);tau=par(3);
   
@@ -303,6 +319,19 @@ void Teclado(unsigned char key,int x, int y)
       cout << "right:" << z.row(z.n_rows-1) << endl;
       
       break;
+    case 'y':
+      k1.zeros();
+      k1.col(0)=real(ifft(-k%k%fft(z.col(0))));
+
+      aux.rows(1,aux.n_rows-2)=z;
+
+      if(par(7)==1){aux.row(0)=aux.row(aux.n_rows-2);aux.row(aux.n_rows-1)=aux.row(1);}//periodic
+      //diffusion
+      zxx=(aux.rows(2,aux.n_rows-1)+aux.rows(0,aux.n_rows-3)-2*aux.rows(1,aux.n_rows-2))/par(1)/par(1);
+      k1.col(1)=zxx.col(0);
+      k1.save("ffxx.dat",raw_ascii);      
+      break;
+      
  
     }
   
