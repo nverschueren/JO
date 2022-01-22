@@ -3,7 +3,7 @@
 #include<armadillo>
 using namespace std;
 using namespace arma;
-/// 1/21/22,  This is a DNS for the  Jump Oscillons model
+/// 1/10/22,  This is a DNS for the  Jump Oscillons model
 //-----------------------------------------------------------------------------------------------------
 //
 //                        GLOBAL VARIABLES
@@ -133,18 +133,20 @@ mat rhs(vec par, mat z)
   //diffusion
   zxx=(aux.rows(2,aux.n_rows-1)+aux.rows(0,aux.n_rows-3)-2*aux.rows(1,aux.n_rows-2))/par(1)/par(1);
   
-
   
   //  zxx.col(0)=par(5)*zxx.col(0);  zxx.col(1)=par(6)*zxx.col(1);  zxx.col(2)=par(16)*zxx.col(2);
-  if(par(7)==2){
-  zxx.col(0)=par(5)*real(ifft(-k%k%fft(z.col(0))));
-  zxx.col(1)=par(6)*real(ifft(-k%k%fft(z.col(1))));
-  zxx.col(2)=par(16)*real(ifft(-k%k%fft(z.col(2))));
-  }
-  //reaction
-  double kk1,kk3,kk4,tau; kk1=par(9); kk3=par(4);tau=par(3);
   
-  aux.col(0).rows(1,aux.n_rows-2)=kk1+2*z.col(0)-z.col(0)%z.col(0)%z.col(0)-kk3*z.col(1)-kk4*z.col(2);
+  if(par(7)==2){
+  zxx.col(0)=zeros(par(0));//par(5)*real(ifft(-k%k%fft(z.col(0))));
+  zxx.col(1)=zeros(par(0));//par(6)*real(ifft(-k%k%fft(z.col(1))));
+  zxx.col(2)=zeros(par(0));//par(16)*real(ifft(-k%k%fft(z.col(2))));
+  }
+   
+
+  //reaction
+  double kk1,kk3,tau; kk1=par(9); kk3=par(4);tau=par(3);
+  double kk4 =par(8);
+  aux.col(0).rows(1,aux.n_rows-2)= kk1 + 2*z.col(0) - z.col(0)%z.col(0)%z.col(0) - kk3*z.col(1) - kk4*z.col(2);
   aux.col(1).rows(1,aux.n_rows-2)=(z.col(0)-z.col(1))/tau;
   aux.col(2).rows(1,aux.n_rows-2)=z.col(0)-z.col(2);
   
@@ -232,7 +234,20 @@ void Teclado(unsigned char key,int x, int y)
       par.load("parapara.dat");
       cout << "loading state ..." << endl;
       break;
-      
+
+    case 'j':
+      float p,q,D,A,B;
+      p = par(4) + par(8) - 2; //k3+k4-2
+      q = - par(9); // -k1
+      D = pow(q/2,2) + pow(p/3,3);
+      A = pow(-q/2 + sqrt(D) ,1/3);
+      B = pow(-q/2 - sqrt(D) ,1/3);
+      z.col(0) = -1.6*ones(par(0)); //(A+B)*ones(par(0));
+      z.col(1) = -1.6*ones(par(0));//(A+B)*ones(par(0));
+      z.col(2) = -1.6*ones(par(0));//(A+B)*ones(par(0));
+      z.col(0).subvec(0,30) = -0.2*ones(31);
+      break;
+
     case 'x':
       visual++;
       visual=visual%3;
@@ -351,13 +366,25 @@ void tiempo(void)
 
       
       while(cont<estro)
-	{
+      {
+        
 	k1=rhs(par,z);
+        //        z.col(0).subvec(30,60) = -0.2*ones(31)
+
 	/*	k2=rhs(par,z+0.5*par(2)*k1);
 	k3=rhs(par,z+0.5*par(2)*k2);
 	k4=rhs(par,z+par(2)*k3);
 	z+=par(2)*(k1+2*k2+2*k3+k4)/6.0;  */ //RK4
-	z+=par(2)*k1;//euler
+       
+        if ((par(7) == 0) or (par(7) == 1)) { z+= k1*par(2); }
+	if (par(7) == 2) 
+	{
+	  z.col(0) = real(ifft(fft(z.col(0) + par(2)*k1.col(0))/(1+par(5) *par(2)*k%k)));
+          z.col(1) = real(ifft(fft(z.col(1) + par(2)*k1.col(1))/(1+par(6) *par(2)*k%k)));
+          z.col(2) = real(ifft(fft(z.col(2) + par(2)*k1.col(2))/(1+par(16)*par(2)*k%k)));
+	}
+
+
 	cont++;
 	tme+=par(2);
 	}cont=0;
