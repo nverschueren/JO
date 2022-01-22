@@ -3,7 +3,7 @@
 #include<armadillo>
 using namespace std;
 using namespace arma;
-/// 1/20/22,  This is a DNS for the  Jump Oscillons model
+/// 1/21/22,  This is a DNS for the  Jump Oscillons model
 //-----------------------------------------------------------------------------------------------------
 //
 //                        GLOBAL VARIABLES
