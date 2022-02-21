@@ -387,6 +387,10 @@ void Teclado(unsigned char key,int x, int y)
       loca=z.rows(maxi-par(20),maxi+par(20));
       //      loca.save("loca.dat",raw_ascii);
       break;
+    case 'd':
+      cout << "flipping the localized solution"<< endl;
+      loca=flipud(loca);
+      break;
  
     }
   
