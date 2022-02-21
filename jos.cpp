@@ -4,6 +4,9 @@
 using namespace std;
 using namespace arma;
 /// 1/10/22,  This is a DNS for the  Jump Oscillons model
+// By A. van Kan and N.V. van Rees
+// A semi implicit euler spectral method. Is this correct Adrian?
+// 21/2/22 Updates
 //-----------------------------------------------------------------------------------------------------
 //
 //                        GLOBAL VARIABLES
@@ -12,9 +15,9 @@ using namespace arma;
 
 
 vec par,k;
-mat z, k1,k2,k3,k4,zxx,aux; 
+mat z, k1,k2,k3,k4,zxx,aux,zx,loca; 
 
-int ret,estro,cont,visual,px3,py3;
+int ret,estro,cont,visual,px3,py3,maxi,neigh,me,ma;
 bool camina,graba,muestra;
 double tme,xp,yp;
 
@@ -39,6 +42,7 @@ double mapeoy(double umin, double umax, double py,double y);
 int mapeox(int px,int Nm1,int x);
 void Teclado(unsigned char key,int x, int y);
 void tiempo(void);
+void cliquea(int button, int state, int x, int y);
 /*
 // parameter space
 void Dibuja2(void);
@@ -72,17 +76,18 @@ int main(int argc, char **argv)
 
   z.set_size(par(0),3);
   zxx.set_size(par(0),3);
+  zx.set_size(par(0),3);
   k1.set_size(par(0),3);
   k2.set_size(par(0),3);
   k3.set_size(par(0),3);
   k4.set_size(par(0),3);
   aux.set_size(par(0)+2,3); //plus the number of neighbours you want for your finite differences scheme
+  loca.set_size(2*par(20)+1,3);
   if(argc==1){z.zeros();  z.fill(-0.9540); }
  
 
   k.set_size(par(0));
-  
-  k.subvec(0,par(0)/2-1)=regspace(0,par(0)/2-1);
+    k.subvec(0,par(0)/2-1)=regspace(0,par(0)/2-1);
   k.subvec(par(0)/2,k.n_rows-1)=regspace(-par(0)/2,-1);
   k=2*datum::pi*k/par(0)/par(1);
   //  k.save("k.dat",raw_ascii);
@@ -103,6 +108,7 @@ int main(int argc, char **argv)
   glutDisplayFunc(Dibuja);
   glutReshapeFunc(reescala);
   glutMotionFunc(muevelo);
+  glutMouseFunc(cliquea);
   glutKeyboardFunc(Teclado);  
 
 
@@ -141,7 +147,7 @@ mat rhs(vec par, mat z)
   zxx.col(1)=zeros(par(0));//par(6)*real(ifft(-k%k%fft(z.col(1))));
   zxx.col(2)=zeros(par(0));//par(16)*real(ifft(-k%k%fft(z.col(2))));
   }
-   
+  
 
   //reaction
   double kk1,kk3,tau; kk1=par(9); kk3=par(4);tau=par(3);
@@ -166,7 +172,34 @@ void Dibuja()
   glBegin(GL_LINE_STRIP);
   for(double i=0; i<par(0); i++)
     {glVertex2f(i,z(i,visual));} glEnd();
+  
+  //ux. New stuff
+  glLineWidth(3);
+  glBegin(GL_LINE_STRIP);
+  glColor3f(0,0,0);
+  
+  for(double i=0; i<par(0);i++){glVertex2f(i,zx(i,visual));}glEnd();
+  
+  glColor3f(1,0,0);
+  glPointSize(5);
+  maxi=z.col(visual).index_max();
+  glBegin(GL_POINTS);
+  glVertex2f(maxi,z(maxi,visual)); glEnd();
 
+  // from here we have a minimum amount of points to look around
+  neigh=par(20);
+  
+  if(maxi-neigh<0){me=par(0)-1+maxi-neigh;}else{me=maxi-neigh;}
+  if(maxi+neigh>par(0)-1){ma=maxi+neigh-par(0)+1;}else{ma=maxi+neigh;}
+  //  cout << "The value of the derivative at me is:" << zx(me,visual) << endl;
+  // cout << "The value of the derivative at ma is:" << zx(ma,visual) << endl;
+  
+  glColor3f(0,1,0);
+  glPointSize(7);
+  glBegin(GL_POINTS);
+  glVertex2f(me,z(me,visual));
+  glVertex2f(ma,z(ma,visual));
+  glEnd();
   glutPostRedisplay();
   glutSwapBuffers();
 
@@ -235,8 +268,9 @@ void Teclado(unsigned char key,int x, int y)
       cout << "loading state ..." << endl;
       break;
 
-    case 'j':
-      float p,q,D,A,B;
+    case 'j':// What is this for?
+      //      float p,q,D,A,B; // Using double in c++ is the standard. Most built in functions use double arguments
+      double p,q,D,A,B;
       p = par(4) + par(8) - 2; //k3+k4-2
       q = - par(9); // -k1
       D = pow(q/2,2) + pow(p/3,3);
@@ -346,7 +380,13 @@ void Teclado(unsigned char key,int x, int y)
       k1.col(1)=zxx.col(0);
       k1.save("ffxx.dat",raw_ascii);      
       break;
+
+    case 'h':
+      cout << "capturing the localized solution. Make sure that it is fully contained in the domain" << endl;
       
+      loca=z.rows(maxi-par(20),maxi+par(20));
+      //      loca.save("loca.dat",raw_ascii);
+      break;
  
     }
   
@@ -379,6 +419,12 @@ void tiempo(void)
         if ((par(7) == 0) or (par(7) == 1)) { z+= k1*par(2); }
 	if (par(7) == 2) 
 	{
+	  aux.rows(1,aux.n_rows-2)=z;
+	  //periodic boundary conditions
+	  aux.row(0)=aux.row(aux.n_rows-2);
+	  aux.row(aux.n_rows-1)=aux.row(1);
+	  zx=(aux.rows(2,aux.n_rows-1)-aux.rows(0,aux.n_rows-3))/2.0/par(1);
+	  
 	  z.col(0) = real(ifft(fft(z.col(0) + par(2)*k1.col(0))/(1+par(5) *par(2)*k%k)));
           z.col(1) = real(ifft(fft(z.col(1) + par(2)*k1.col(1))/(1+par(6) *par(2)*k%k)));
           z.col(2) = real(ifft(fft(z.col(2) + par(2)*k1.col(2))/(1+par(16)*par(2)*k%k)));
@@ -402,6 +448,20 @@ void tiempo(void)
   
   
   glutPostRedisplay();
+
+}
+
+void cliquea(int button, int state, int x, int y)
+{
+
+  if(button==GLUT_RIGHT_BUTTON && state==GLUT_DOWN && !camina)
+    {
+      cout << "entrando" << endl;
+
+      z.rows(mapeox(par(11),par(0)-1,x)-par(20),mapeox(par(11),par(0)-1,x)+par(20))=loca;
+    }
+
+
 
 }
 
