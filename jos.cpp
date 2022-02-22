@@ -19,7 +19,7 @@ mat z, k1,k2,k3,k4,zxx,aux,zx,loca;
 
 int ret,estro,cont,visual,px3,py3,maxi,neigh,me,ma;
 bool camina,graba,muestra;
-double tme,xp,yp;
+double tme,xp,yp,tops;
 
 //-----------------------------------------------------------------------------------------------------
 //
@@ -43,6 +43,7 @@ int mapeox(int px,int Nm1,int x);
 void Teclado(unsigned char key,int x, int y);
 void tiempo(void);
 void cliquea(int button, int state, int x, int y);
+void cliquea2(int button, int state, int x, int y);
 /*
 // parameter space
 void Dibuja2(void);
@@ -109,6 +110,7 @@ int main(int argc, char **argv)
   glutReshapeFunc(reescala);
   glutMotionFunc(muevelo);
   glutMouseFunc(cliquea);
+  //  glutMouseFunc(cliquea2);
   glutKeyboardFunc(Teclado);  
 
 
@@ -175,10 +177,14 @@ void Dibuja()
   
   //ux. New stuff
   glLineWidth(3);
-  glBegin(GL_LINE_STRIP);
   glColor3f(0,0,0);
+  glBegin(GL_LINE_STRIP);
+  glVertex2f(0,tops);
+  glVertex2f(par(0)-1,tops);
+  glEnd();
   
-  for(double i=0; i<par(0);i++){glVertex2f(i,zx(i,visual));}glEnd();
+  //for(double i=0; i<par(0);i++){glVertex2f(i,zx(i,visual));}glEnd();
+  
   
   glColor3f(1,0,0);
   glPointSize(5);
@@ -243,6 +249,7 @@ void Teclado(unsigned char key,int x, int y)
       break;
     case 'r':
 	z.zeros();
+
 	cout << "ras" << endl;
 	break;
     case 's'://save
@@ -313,7 +320,7 @@ void Teclado(unsigned char key,int x, int y)
 
     case 't':
       cout << "---RD Model to observe Jump Oscillons (JO)s----" << endl;
-      cout <<  "u_t=Du*nabla**2 u +k1+2*u-u**3-k3*v-k4*w"<< endl;
+      cout <<  "u_t=Dunabla**2 u +k1+2*u-u**3-k3*v-k4*w"<< endl;
       cout <<  "v_t=Dv*nabla**2 v+(u-v)/tau" << endl;
       cout << "w_t=Dw*nabla**2*w+u-w " << endl;
       cout << "-----Numerical Parameters---------- " << endl;
@@ -391,6 +398,13 @@ void Teclado(unsigned char key,int x, int y)
       cout << "flipping the localized solution"<< endl;
       loca=flipud(loca);
       break;
+    case 'e':
+      tops=0;
+      break;
+    case 'b':
+     
+      cout << find(0.99*tops<z.col(visual)) << endl;
+      break;
  
     }
   
@@ -432,6 +446,8 @@ void tiempo(void)
 	  z.col(0) = real(ifft(fft(z.col(0) + par(2)*k1.col(0))/(1+par(5) *par(2)*k%k)));
           z.col(1) = real(ifft(fft(z.col(1) + par(2)*k1.col(1))/(1+par(6) *par(2)*k%k)));
           z.col(2) = real(ifft(fft(z.col(2) + par(2)*k1.col(2))/(1+par(16)*par(2)*k%k)));
+
+	  if(tops<z.col(visual).max()){tops=z.col(visual).max(); cout << z.col(visual).max() << endl;}
 	}
 
 
@@ -450,23 +466,19 @@ void tiempo(void)
 	}      
     }//if camina
   
-  
+    
   glutPostRedisplay();
 
 }
 
 void cliquea(int button, int state, int x, int y)
 {
-
   if(button==GLUT_RIGHT_BUTTON && state==GLUT_DOWN && !camina)
     {
       cout << "entrando" << endl;
 
       z.rows(mapeox(par(11),par(0)-1,x)-par(20),mapeox(par(11),par(0)-1,x)+par(20))=loca;
     }
-
-
-
 }
 
 

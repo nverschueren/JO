@@ -1,4 +1,4 @@
-N	512
+N	1024
 dx	0.5
 dt	5e-3
 tau	50
@@ -6,7 +6,7 @@ k3	10
 Du	1
 Dv	0.6
 bc	2
-k4	1
+k4	2
 k1	-8.5
 itmax	5e4
 pixx	850
@@ -18,4 +18,4 @@ Dw	60
 themax	3
 Fmax	3
 sigma	40
-vois. 	90	
+vois. 	90
