@@ -1,0 +1,45 @@
+\documentclass{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath}
+\begin{document}
+\begin{center}
+  {\Large \textbf{Jumping Oscillons SandBox}}
+\end{center}
+\begin{flushright}
+  \begin{tabular}{cc}
+    \textbf{Name:}&Adrian van Kan\\
+    &Nicolas V. van Rees
+  \end{tabular}\\
+  \tiny{\today}
+  \end{flushright}
+  \hrule
+\section{Model}
+\begin{align}
+  \label{eq:mod}
+\partial_t u&=d_u\partial_{xx} u +k_1+2u-u^3-k_3v-k_4w\\
+\partial_tv&=d_v\partial_{xx} v+\frac{(u-v)}{\tau} \nonumber\\
+\partial_tw&=d_w\partial_{xx}w+u-w.\nonumber
+\end{align}
+\section{How to make this code work in your machine}
+Once the dependencies have been satisfied. Running \verb!cmake .!
+should allow the user to compile the program by executing the
+command \verb!make! in the local directory. if the binary is created
+successfully, it can be executed via \verb!./jos! . The program can be
+called with two additional arguments, namely the initial condition and
+parameter values as:\\
+\verb! ./jos solution.dat parameters.dat!\\
+More on this below
+\section{Usage}
+Once the program is running, the user is prompt with an interactive
+window called \verb!Instant solution!, showing the space on the
+horizontal direction and one of the components of (\ref{eq:mod}) $u$ (blue), $v$ (red),
+$w$(green).  The interaction with the user is done through the mouse
+and keyboard.
+
+
+
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

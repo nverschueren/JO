@@ -15,10 +15,12 @@ using namespace arma;
 
 
 vec par,k;
-mat z, k1,k2,k3,k4,zxx,aux,zx,loca; 
+mat z, k1,k2,k3,k4,zxx,aux,zx,loca,ut,vt,wt; 
 
-int ret,estro,cont,visual,px3,py3,maxi,neigh,me,ma;
-bool camina,graba,muestra;
+
+
+int ret,estro,cont,visual,px3,py3,maxi,neigh,me,ma,cont2,maxif,indi;
+bool camina,graba,muestra,loctype,captur;
 double tme,xp,yp;
 
 //-----------------------------------------------------------------------------------------------------
@@ -67,10 +69,12 @@ int main(int argc, char **argv)
   //cout << par << endl;
   camina=true;
   graba=false;
-  
+  loctype=false;
+  captur=false;
   tme=0;
   estro=par(15);
- 
+  cont2=0;
+  indi=0;
   // cont=0;
   // muestra=false;
 
@@ -82,12 +86,18 @@ int main(int argc, char **argv)
   k3.set_size(par(0),3);
   k4.set_size(par(0),3);
   aux.set_size(par(0)+2,3); //plus the number of neighbours you want for your finite differences scheme
-  loca.set_size(2*par(20)+1,3);
-  if(argc==1){z.zeros();  z.fill(-0.9540); }
- 
 
+  //arrays for the localised structures
+
+
+  
+  loca.set_size(2*par(20)+1,3);
+  
+  if(argc==1){z.zeros();  z.fill(-0.9540); }
+  
+  
   k.set_size(par(0));
-    k.subvec(0,par(0)/2-1)=regspace(0,par(0)/2-1);
+  k.subvec(0,par(0)/2-1)=regspace(0,par(0)/2-1);
   k.subvec(par(0)/2,k.n_rows-1)=regspace(-par(0)/2,-1);
   k=2*datum::pi*k/par(0)/par(1);
   //  k.save("k.dat",raw_ascii);
@@ -172,14 +182,15 @@ void Dibuja()
   glBegin(GL_LINE_STRIP);
   for(double i=0; i<par(0); i++)
     {glVertex2f(i,z(i,visual));} glEnd();
-  
+
+  /* //not in use
   //ux. New stuff
   glLineWidth(3);
   glBegin(GL_LINE_STRIP);
   glColor3f(0,0,0);
   
   for(double i=0; i<par(0);i++){glVertex2f(i,zx(i,visual));}glEnd();
-  
+  */
   glColor3f(1,0,0);
   glPointSize(5);
   maxi=z.col(visual).index_max();
@@ -328,7 +339,7 @@ void Teclado(unsigned char key,int x, int y)
 
     case 'i':
       cout << "<-----------------KEYS -------------->" << endl;
-      cout << "p or space bar: pause/play the simulation " <<endl;
+      cout << "p or spacebar: pause/play the simulation " <<endl;
       cout << "r: set all the fields to zero " << endl;
       cout << "s: save state"<< endl;
       cout << "l: load state " <<endl;
@@ -339,6 +350,14 @@ void Teclado(unsigned char key,int x, int y)
       cout << "i: watch this information "<< endl;
       cout << "k: save/stop saving the xt diagram in the chosen component xtdata.dat at the local dir "<< endl;
       cout << "o: show/hide time and norm of RHS and values of the solution at the left and right boundaries " << endl;
+      cout << "x: switch the component to visualize u->v->w->u" << endl;
+      cout << "y: it does something with the second derivative but I am not sure what is it" << endl;
+      cout << "h: captures the solution contained between the green points" << endl;
+      cout << "j: loading the localized jumping oscillon solution (THIS IS PARAMETER DEPENDENT)" << endl;
+      cout << "q: type of localized solutions to consider" << endl;
+      cout << "c/v: de/inrease the speed of the moving frame "<< endl;
+      cout <<" FREE KEYS: q,w,e,f,g,z,b" << endl;
+
 
      break;
 
@@ -368,24 +387,71 @@ void Teclado(unsigned char key,int x, int y)
       break;
 
     case 'h':
-      cout << "capturing the localized solution. Make sure that it is fully contained in the domain" << endl;
-      
-      loca=z.rows(maxi-par(20),maxi+par(20));
-      loca.save("loca.dat",raw_ascii);
+      captur=!captur;
+      if(captur){
+	if(loctype){cout << "Capturing the jumping oscillon" << endl; maxif=maxi;}
+      else{cout << "capturing traveling pulse"<<endl;}
+      }
       break;
 
     case 'j':
       //double loca;
-      cout << "loading the localized solution"<< endl;
-      loca.load("loca.dat",raw_ascii);
-      cout << loca << endl;
+      if(!loctype){
+	cout << "loading the localized traveling pulse"<< endl;
+	loca.load("loca.dat",raw_ascii);}
+      else{
+	cout << "loading jumping oscillons"<< endl;
+
+	ut.load("ut.dat"); vt.load("vt.dat"); wt.load("wt.dat");
+	loca.col(0).rows(0,loca.n_rows-2)=ut.col(indi);
+	loca.col(1).rows(0,loca.n_rows-2)=vt.col(indi);
+	loca.col(2).rows(0,loca.n_rows-2)=wt.col(indi);
+	cout << "loaded";
+	par(23)=0;
+	camina=false;
+      }
+      
+      
+      //      cout << loca << endl;
       break;
 
     case 'd':
       cout << "flipping the localized solution"<< endl;
       loca=flipud(loca);
       break;
- 
+    case 'q':
+      cout << "localized structure type: ";
+      loctype=!loctype;
+      if(loctype){cout <<" Jumping oscillon "<< endl;}
+      else{ cout <<"travelling pulse" << endl;}
+      break;
+    case 'c':
+      cout << "going into a traveling frame, increasing speed v="<<par(22) << endl;
+      par(22)+=par(23);
+      
+      break;
+    case 'v':
+      cout << "going into a traveling frame, decreasing speed v="<< par(22) <<  endl;
+      par(22)-=par(23);
+      
+      break;
+    case 'e':
+      if(indi+par(24)>=par(21)){indi=0;}
+      else{indi+=par(24);}
+      cout << indi << endl;
+      loca.col(0).rows(0,loca.n_rows-2)=ut.col(indi);
+      loca.col(1).rows(0,loca.n_rows-2)=vt.col(indi);
+      loca.col(2).rows(0,loca.n_rows-2)=wt.col(indi);
+      
+      break;
+    case 'f':
+      if(indi<par(24)){indi=0;}
+      else{indi-=par(24);}
+      cout << indi << endl;
+      loca.col(0).rows(0,loca.n_rows-2)=ut.col(indi);
+      loca.col(1).rows(0,loca.n_rows-2)=vt.col(indi);
+      loca.col(2).rows(0,loca.n_rows-2)=wt.col(indi);
+      break;
     }
   
   glutPostRedisplay();
@@ -399,38 +465,71 @@ void tiempo(void)
 {
 
   if(camina)
-    {
-      cont=0;
-
-      
+    {cont=0;
       while(cont<estro)
-      {
-        
-	k1=rhs(par,z);
-        //        z.col(0).subvec(30,60) = -0.2*ones(31)
-
-	/*	k2=rhs(par,z+0.5*par(2)*k1);
-	k3=rhs(par,z+0.5*par(2)*k2);
-	k4=rhs(par,z+par(2)*k3);
-	z+=par(2)*(k1+2*k2+2*k3+k4)/6.0;  */ //RK4
-       
-        if ((par(7) == 0) or (par(7) == 1)) { z+= k1*par(2); }
-	if (par(7) == 2) 
 	{
-	  aux.rows(1,aux.n_rows-2)=z;
-	  //periodic boundary conditions
-	  aux.row(0)=aux.row(aux.n_rows-2);
-	  aux.row(aux.n_rows-1)=aux.row(1);
-	  zx=(aux.rows(2,aux.n_rows-1)-aux.rows(0,aux.n_rows-3))/2.0/par(1);
 	  
-	  z.col(0) = real(ifft(fft(z.col(0) + par(2)*k1.col(0))/(1+par(5) *par(2)*k%k)));
-          z.col(1) = real(ifft(fft(z.col(1) + par(2)*k1.col(1))/(1+par(6) *par(2)*k%k)));
-          z.col(2) = real(ifft(fft(z.col(2) + par(2)*k1.col(2))/(1+par(16)*par(2)*k%k)));
-	}
+	  k1=rhs(par,z);
+	  //        z.col(0).subvec(30,60) = -0.2*ones(31)
+	  
+	  /*	k2=rhs(par,z+0.5*par(2)*k1);
+		k3=rhs(par,z+0.5*par(2)*k2);
+		k4=rhs(par,z+par(2)*k3);
+		z+=par(2)*(k1+2*k2+2*k3+k4)/6.0;  */ //RK4
+	  
+	  if ((par(7) == 0) or (par(7) == 1)) { z+= k1*par(2); }
+	  if (par(7) == 2) 
+	    {
+	      aux.rows(1,aux.n_rows-2)=z;
+	      //periodic boundary conditions
+	      aux.row(0)=aux.row(aux.n_rows-2);
+	      aux.row(aux.n_rows-1)=aux.row(1);
+	      zx=(aux.rows(2,aux.n_rows-1)-aux.rows(0,aux.n_rows-3))/2.0/par(1);
+	      
+	      z.col(0) = real(ifft(fft(z.col(0) + par(2)*k1.col(0))/(1+par(5) *par(2)*k%k+par(22)*cx_double(0,1)*k)));
+	      z.col(1) = real(ifft(fft(z.col(1) + par(2)*k1.col(1))/(1+par(6) *par(2)*k%k+par(22)*cx_double(0,1)*k)));
+	      z.col(2) = real(ifft(fft(z.col(2) + par(2)*k1.col(2))/(1+par(16)*par(2)*k%k+par(22)*cx_double(0,1)*k)));
+	    }
+	  
+	  
+	  cont++;
+	  tme+=par(2);
+	  
+	  
+	  //capturing
+	  if(captur){
+	    //	    cout << "here" << endl;
+	    //cout << loctype << endl;
+	    ut.set_size(2*par(20),par(21));
+	    vt.set_size(2*par(20),par(21));
+	    wt.set_size(2*par(20),par(21));
+	    if(loctype)
+	      {
+		ut.col(cont2)=z.col(0).rows(maxif-par(20),maxif+par(20)-1);
+		vt.col(cont2)=z.col(1).rows(maxif-par(20),maxif+par(20)-1);
+		wt.col(cont2)=z.col(2).rows(maxif-par(20),maxif+par(20)-1);
+		cont2++;
+		cout << cont2 <<" "<< par(21)<< endl;
+		if(cont2==par(21))
+		  {
+		    cont2=0;captur=false;
+		    ut.save("ut.dat",raw_ascii);
+		    vt.save("vt.dat",raw_ascii);
+		    wt.save("wt.dat",raw_ascii);
+		    cout << "done with capturing jumping oscillons" << endl;
+		  }
+	      }
+	    else
+	      {
+	      loca=z.rows(maxi-par(20),maxi+par(20));
+	      loca.save("loca.dat",raw_ascii);cont2=0;captur=false;
+	      cout << "done with capturing travelling pulse" << endl;
+	      }
+	  }
+	
+      
 
-
-	cont++;
-	tme+=par(2);
+	
 	}cont=0;
       
          if(muestra)
@@ -442,7 +541,7 @@ void tiempo(void)
 	for(int i=0;i<int(par(0));i++)
 	  {fprintf(xxt,"%f\t",z(i,visual));}fprintf(xxt,"\n");fclose(xxt);
 	}      
-    }//if camina
+}//if camina
   
   
   glutPostRedisplay();
@@ -454,8 +553,8 @@ void cliquea(int button, int state, int x, int y)
 
   if(button==GLUT_RIGHT_BUTTON && state==GLUT_DOWN && !camina)
     {
-      cout << "entrando" << endl;
-
+      cout << "loading loca" << endl;
+      //      loca.load("loca.dat");
       z.rows(mapeox(par(11),par(0)-1,x)-par(20),mapeox(par(11),par(0)-1,x)+par(20))=loca;
     }
 

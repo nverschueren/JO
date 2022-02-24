@@ -19,3 +19,7 @@ themax	3
 Fmax	3
 sigma	40
 vois. 	90
+perub	3000
+vel	0
+dvel	0.0005
+dper	500
