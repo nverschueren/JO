@@ -3,9 +3,9 @@
 #include<armadillo>
 using namespace std;
 using namespace arma;
-/// 1/10/22,  This is a DNS for the  Jump Oscillons model
+/// 1/10/22,  This is a DNS for the Purwins system.
 // By A. van Kan and N.V. van Rees
-// A semi implicit euler spectral method. Is this correct Adrian?
+// The code uses a semi-implicit spectral method.
 // 21/2/22 Updates
 //-----------------------------------------------------------------------------------------------------
 //
@@ -19,7 +19,7 @@ mat z, k1,k2,k3,k4,zxx,aux,zx,loca,ut,vt,wt;
 
 
 
-int ret,estro,cont,visual,px3,py3,maxi,neigh,me,ma,cont2,maxif,indi;
+int ret,estro,cont,visual,px3,py3,maxi,neigh,me,ma,cont2,maxif,indi,visxl,visxr;
 bool camina,graba,muestra,loctype,captur;
 double tme,xp,yp;
 
@@ -88,9 +88,6 @@ int main(int argc, char **argv)
   aux.set_size(par(0)+2,3); //plus the number of neighbours you want for your finite differences scheme
 
   //arrays for the localised structures
-
-
-  
   loca.set_size(2*par(20)+1,3);
   
   if(argc==1){z.zeros();  z.fill(-0.9540); }
@@ -122,16 +119,6 @@ int main(int argc, char **argv)
   glutKeyboardFunc(Teclado);  
 
 
-  /*
-  glutInitWindowSize(200,200);
-  glutInitWindowPosition(900,300);
-  glutCreateWindow("Espacio de Parametros");
-  Inicializa2();
-  glutDisplayFunc(Dibuja2);
-  glutReshapeFunc(reescala3);
-  glutMouseFunc(mouse);
-  */
-
   glutIdleFunc(tiempo);
 
   glutMainLoop();
@@ -149,15 +136,11 @@ mat rhs(vec par, mat z)
   //diffusion
   zxx=(aux.rows(2,aux.n_rows-1)+aux.rows(0,aux.n_rows-3)-2*aux.rows(1,aux.n_rows-2))/par(1)/par(1);
   
-  
-  //  zxx.col(0)=par(5)*zxx.col(0);  zxx.col(1)=par(6)*zxx.col(1);  zxx.col(2)=par(16)*zxx.col(2);
-  
   if(par(7)==2){
-  zxx.col(0)=zeros(par(0));//par(5)*real(ifft(-k%k%fft(z.col(0))));
-  zxx.col(1)=zeros(par(0));//par(6)*real(ifft(-k%k%fft(z.col(1))));
-  zxx.col(2)=zeros(par(0));//par(16)*real(ifft(-k%k%fft(z.col(2))));
+  zxx.col(0)=zeros(par(0));
+  zxx.col(1)=zeros(par(0));
+  zxx.col(2)=zeros(par(0));
   }
-  
 
   //reaction
   double kk1,kk3,tau; kk1=par(9); kk3=par(4);tau=par(3);
@@ -173,7 +156,6 @@ mat rhs(vec par, mat z)
 void Dibuja()
 {
   glClear(GL_COLOR_BUFFER_BIT);
-  //  glPointSize(10);
   if(visual==0){glColor3f(0,0,1);}
   if(visual==1){glColor3f(1,0,0);}
   if(visual==2){glColor3f(0,1,0);}
@@ -470,18 +452,16 @@ void tiempo(void)
 	{
 	  
 	  k1=rhs(par,z);
-	  //        z.col(0).subvec(30,60) = -0.2*ones(31)
 	  
-	  /*	k2=rhs(par,z+0.5*par(2)*k1);
-		k3=rhs(par,z+0.5*par(2)*k2);
-		k4=rhs(par,z+par(2)*k3);
-		z+=par(2)*(k1+2*k2+2*k3+k4)/6.0;  */ //RK4
-	  
-	  if ((par(7) == 0) or (par(7) == 1)) { z+= k1*par(2); }
+	  if ((par(7) == 0) or (par(7) == 1)) 
+	  { // Neumann or Dirichlet boundary conditions: Euler scheme
+		  z+= k1*par(2); 
+	  }
+
 	  if (par(7) == 2) 
 	    {
 	      aux.rows(1,aux.n_rows-2)=z;
-	      //periodic boundary conditions
+	      //periodic boundary conditions: semi-implicit spectral scheme
 	      aux.row(0)=aux.row(aux.n_rows-2);
 	      aux.row(aux.n_rows-1)=aux.row(1);
 	      zx=(aux.rows(2,aux.n_rows-1)-aux.rows(0,aux.n_rows-3))/2.0/par(1);
@@ -550,90 +530,22 @@ void tiempo(void)
 
 void cliquea(int button, int state, int x, int y)
 {
-
   if(button==GLUT_RIGHT_BUTTON && state==GLUT_DOWN && !camina)
     {
       cout << "loading loca" << endl;
       //      loca.load("loca.dat");
-      z.rows(mapeox(par(11),par(0)-1,x)-par(20),mapeox(par(11),par(0)-1,x)+par(20))=loca;
+      cout << "left" << mapeox(par(11),par(0)-1,x)-par(20)  << endl;
+      cout << "right" << mapeox(par(11),par(0)-1,x)+par(20) << endl;
+
+      visxl = mapeox(par(11),par(0)-1,x)-par(20);
+      visxr = mapeox(par(11),par(0)-1,x)+par(20);
+      if(visxl < 0) 
+      { visxl = 1;
+        visxr = 2*par(20)+1; }
+      if(visxr > par(0))
+      { visxr = par(0)-1; 
+        visxl = par(0)-2*par(20)-1;}
+      z.rows(visxl,visxr)=loca;
     }
 
-
-
 }
-
-
-/*
-void Dibuja2(void)
-{
- 
-    glClear(GL_COLOR_BUFFER_BIT);  
-
-    glColor3f(1,0,0); //rojo  
-    glBegin(GL_LINE_STRIP);for(double i=0; i<par(17); i+=0.03){glVertex2f(i,patronmarginal(i));}glEnd();
-
-    
-    glColor3f(0,0,1); //azul  
-  glBegin(GL_LINE_STRIP);for(double i=0; i<thetamax; i+=0.03){glVertex2f(i,biestabilidadmarginal1(i));}glEnd();
-
-
-    glColor3f(0,0,1); //azul  
-  glBegin(GL_LINE_STRIP);for(double i=0; i<thetamax; i+=0.03){glVertex2f(i,biestabilidadmarginal2(i));}glEnd();
-    
-  glColor3f(0,0,0); //negro
-  glPointSize(4);
-  glBegin(GL_POINTS);
-  glVertex2f(par(4),par(5));
-  glEnd();
-
-  //glColor3f(0,0,1); //azul
-  glPointSize(8);
-  glBegin(GL_POINTS);
-  glVertex2f(41.0/30.0,sqrt(1021.0)/30.0);
-  glEnd();
-  
-
-
-  glutPostRedisplay();
- glutSwapBuffers();
-
-}
-
-void reescala3(int x, int y)
-{
-  py3=y;
-  px3=x;
-  glViewport(0, 0, x, y);
-  glClear(GL_COLOR_BUFFER_BIT); 
-  glutPostRedisplay();
-  Inicializa2();
-
-}
-
-void mouse(int boton,int apretao,int x, int y)
-{
-
-if(boton==GLUT_LEFT_BUTTON && apretao==GLUT_DOWN)
-  {
-
-    xp=pixel2valor(x,px3,par(17),0);
-    yp=pixel2valor(py3-y,py3,par(18),0);
-    par(4)=xp;
-    par(5)=yp;
-    cout << "theta=" << par(4) << ", F=" << par(5) << endl;
-  }
-  glutPostRedisplay();
-}
- void Inicializa2(void)// parameter's space
-{
-  glClear(GL_COLOR_BUFFER_BIT); //asi se arrgla el problema de la ventana transparente
-  glClearColor(1,1,1,0); //color del background de la ventana (R,G,B)
-  glMatrixMode(GL_PROJECTION);//ni idea que hace
- glLoadIdentity();//ni idea
- gluOrtho2D(0,par(17),0,par(18)); //hace el mapeo en [0,thetamax]x[0,Fmax]
-}
-
- double pixel2valor(int pix,int pmax, double umax, double umin)
-{  return (umax-umin)*pix/pmax+umin;}
-double patronmarginal(double theta){  return sqrt(2-2*theta+theta*theta);}
-*/
