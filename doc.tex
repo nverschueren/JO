@@ -33,9 +33,29 @@ More on this below
 Once the program is running, the user is prompt with an interactive
 window called \verb!Instant solution!, showing the space on the
 horizontal direction and one of the components of (\ref{eq:mod}) $u$ (blue), $v$ (red),
-$w$(green).  The interaction with the user is done through the mouse
-and keyboard.
+$w$(green). The interaction with the user is done through the mouse
+and keyboard. 
 
+A list of the controls:
+\begin{itemize}
+\item \verb!'i'!: show information on different commands
+\item \verb!'t'!: print current parameters and model equations
+\item \verb!'r'!: reset all fields to zero
+\item \verb!'x'!: switch between the visualisation of different components $u,v,w$ 
+\item \verb!'a'!: adapt the ordinate axis to current state 
+\item \verb!'s'!: save current state to "campo.dat", and parameters to "parapara.dat"
+\item \verb!'l'!: load field from "campo.dat, and parameters from "parapara.dat"
+\item \verb!'u'!: load parameters
+\item \verb!'n'!: decrease stroboscobic period $T_s$ (state displayed at times $t, t+T_s, t +2T_s,\dots$)
+\item \verb!'m'!:  increase stroboscobic period $T_s$
+\item \verb!'q'!:  switch between modes \verb!'jumping oscillons'! and  \verb!'travelling pulse'!
+\item \verb!'h'!: save travelling pulse to "loca.dat", and jumping oscillon to "ut.dat", "vt.dat", "wt.dat"
+\item \verb!'j'!: Load travelling pulse and jumping oscillon
+\item \verb!'Left click'!: Modify current field interactively
+\item \verb!'Right click'!: after \verb!'j'! insert at desired position
+\item \verb!'e'!: If loaded jumping oscillon via \verb!'j'!, increase JO phase before inserting via \verb!'right click'!. 
+
+\end{itemize}
 
 
 \end{document}

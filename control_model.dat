@@ -1,6 +1,6 @@
 N	1024
 dx	0.5
-dt	1e-2
+dt	5e-3
 tau	50
 k3	10
 Du	1
